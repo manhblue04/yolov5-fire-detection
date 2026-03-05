@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FireGuardian PRO — Hệ Thống Giám Sát Cháy AI</title>
+    <meta name="description"
+        content="Hệ thống giám sát, phát hiện và cảnh báo đám cháy thời gian thực sử dụng trí tuệ nhân tạo YOLOv5.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <style>
+        /* ===================== VARIABLES ===================== */
+        :root {
+            --bg-primary: #080b14;
+            --bg-secondary: #0d1220;
+            --bg-tertiary: #111828;
+            --bg-card: rgba(17, 24, 40, 0.85);
+            --bg-input: rgba(255, 255, 255, 0.04);
+            --bg-hover: rgba(255, 255, 255, 0.08);
+
+            --accent-red: #ff4757;
+            --accent-red-dim: rgba(255, 71, 87, 0.15);
+            --accent-red-glow: rgba(255, 71, 87, 0.35);
+            --accent-amber: #ffa502;
+            --accent-amber-dim: rgba(255, 165, 2, 0.12);
+            --accent-green: #2ed573;
+            --accent-green-dim: rgba(46, 213, 115, 0.12);
+            --accent-blue: #3742fa;
+
+            --text-primary: #edf0f7;
+            --text-secondary: #8892a8;
+            --text-tertiary: #5a6478;
+
+            --border: rgba(255, 255, 255, 0.06);
+            --border-active: rgba(255, 71, 87, 0.4);
+
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --radius-xl: 28px;
+
+            --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.5);
+            --shadow-glow-red: 0 0 40px rgba(255, 71, 87, 0.15);
+            --shadow-glow-green: 0 0 30px rgba(46, 213, 115, 0.1);
+
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ===================== RESET & BASE ===================== */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Ambient Background Glow */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(255, 71, 87, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(55, 66, 250, 0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(255, 165, 2, 0.02) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* ===================== HEADER ===================== */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            height: 64px;
+            background: rgba(8, 11, 20, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent-red), var(--accent-amber));
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            box-shadow: 0 4px 20px var(--accent-red-glow);
+            position: relative;
+        }
+
+        .brand-icon::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 13px;
+            background: linear-gradient(135deg, var(--accent-red), var(--accent-amber));
+            opacity: 0.25;
+            filter: blur(8px);
+            z-index: -1;
+        }
+
+        .brand-icon svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+
+        .brand-name {
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #fff 0%, #ffc4c8 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-tag {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--accent-amber);
+            background: var(--accent-amber-dim);
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 6px;
+            letter-spacing: 1px;
+            vertical-align: super;
+        }
+
+        /* Email Bar */
+        .email-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: 6px 18px;
+            height: 40px;
+            transition: var(--transition);
+        }
+
+        .email-bar:focus-within {
+            border-color: var(--accent-red);
+            box-shadow: 0 0 0 3px var(--accent-red-dim);
+        }
+
+        .email-bar svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--text-tertiary);
+            flex-shrink: 0;
+        }
+
+        .email-bar:focus-within svg {
+            fill: var(--accent-red);
+        }
+
+        .email-bar input {
+            all: unset;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            width: 260px;
+        }
+
+        .email-bar input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        /* ===================== LAYOUT ===================== */
+        .app-container {
+            position: relative;
+            z-index: 1;
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 28px 32px 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* ===================== TABS ===================== */
+        .tabs-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            width: fit-content;
+        }
+
+        .tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            border-radius: var(--radius-sm);
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .tab svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+
+        .tab.active {
+            color: white;
+            background: linear-gradient(135deg, rgba(255, 71, 87, 0.2), rgba(255, 165, 2, 0.08));
+            box-shadow: inset 0 0 0 1px var(--border-active);
+        }
+
+        .tab.active svg {
+            fill: var(--accent-red);
+        }
+
+        /* Glow dot on active tab */
+        .tab.active::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-red);
+            box-shadow: 0 0 8px var(--accent-red);
+        }
+
+        /* ===================== WORKSPACE GRID ===================== */
+        .workspace {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            min-height: 560px;
+        }
+
+        .workspace.active {
+            display: grid;
+            animation: slideUp 0.4s ease;
+        }
+
+        /* ===================== CARD (PANEL) ===================== */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: var(--shadow-card);
+            display: flex;
+            flex-direction: column;
+            transition: var(--transition);
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: -0.2px;
+        }
+
+        .card-title .indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-red);
+            box-shadow: 0 0 8px var(--accent-red-glow);
+        }
+
+        .card-title .indicator.green {
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green-dim);
+        }
+
+        .card-title .label {
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-left: auto;
+            font-size: 0.78rem;
+        }
+
+        /* ===================== VIEWPORT (Image/Video/Result viewer) ===================== */
+        .viewport {
+            flex: 1;
+            background: var(--bg-primary);
+            border: 2px dashed rgba(255, 255, 255, 0.07);
+            border-radius: var(--radius-md);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            min-height: 340px;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .viewport.no-dashed {
+            border-style: solid;
+            border-color: var(--border);
+            cursor: default;
+        }
+
+        .viewport.drag-hover {
+            border-color: var(--accent-red);
+            background: rgba(255, 71, 87, 0.03);
+        }
+
+        .viewport img,
+        .viewport video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: none;
+        }
+
+        .viewport-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-tertiary);
+            pointer-events: none;
+        }
+
+        .viewport-empty svg {
+            width: 48px;
+            height: 48px;
+            fill: var(--text-tertiary);
+            opacity: 0.35;
+        }
+
+        .viewport-empty span {
+            font-size: 0.88rem;
+            font-weight: 500;
+        }
+
+        .viewport-empty small {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            opacity: 0.7;
+        }
+
+        /* Scan FX */
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--accent-red);
+            box-shadow: 0 0 20px 6px var(--accent-red-glow), 0 2px 60px 10px rgba(255, 71, 87, 0.15);
+            opacity: 0;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .scanning .scan-line {
+            opacity: 1;
+            animation: scanMove 2s ease-in-out infinite;
+        }
+
+        /* ===================== BUTTONS ===================== */
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 0.88rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+        }
+
+        .btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        .btn-fire {
+            background: linear-gradient(135deg, var(--accent-red), #e0392c);
+            color: white;
+            box-shadow: 0 4px 20px var(--accent-red-glow);
+        }
+
+        .btn-fire:hover:not(:disabled) {
+            box-shadow: 0 6px 30px rgba(255, 71, 87, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .btn-fire:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-ghost {
+            background: var(--bg-input);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ghost:hover {
+            background: var(--bg-hover);
+            color: white;
+        }
+
+        .btn-cam {
+            background: linear-gradient(135deg, #10ac84, #1dd1a1);
+            color: white;
+            box-shadow: 0 4px 20px rgba(46, 213, 115, 0.2);
+        }
+
+        .btn-cam:hover:not(:disabled) {
+            box-shadow: 0 6px 30px rgba(46, 213, 115, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .btn-cam:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, var(--accent-red), #c0392b);
+            color: white;
+        }
+
+        /* Spinner */
+        .spinner-sm {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+
+        /* ===================== STATUS BAR ===================== */
+        .status-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 14px;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: var(--radius-sm);
+            font-size: 0.82rem;
+        }
+
+        .status-row .meta {
+            color: var(--text-tertiary);
+        }
+
+        .status-row .meta strong {
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 14px;
+            border-radius: 100px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .badge-idle {
+            background: var(--bg-input);
+            color: var(--text-tertiary);
+        }
+
+        .badge-danger {
+            background: var(--accent-red-dim);
+            color: var(--accent-red);
+            box-shadow: 0 0 20px var(--accent-red-dim);
+            animation: pulseBadge 2s ease infinite;
+        }
+
+        .badge-safe {
+            background: var(--accent-green-dim);
+            color: var(--accent-green);
+        }
+
+        /* ===================== WEBCAM SECTION ===================== */
+        .cam-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+            align-items: center;
+        }
+
+        .fps-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--accent-amber);
+            background: var(--accent-amber-dim);
+            padding: 4px 12px;
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+
+        /* ===================== FILE INPUT (hidden) ===================== */
+        input[type="file"] {
+            display: none;
+        }
+
+        /* ===================== ANIMATIONS ===================== */
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes scanMove {
+            0% {
+                top: -2%;
+            }
+
+            50% {
+                top: 98%;
+            }
+
+            100% {
+                top: -2%;
+            }
+        }
+
+        @keyframes pulseBadge {
+
+            0%,
+            100% {
+                box-shadow: 0 0 20px var(--accent-red-dim);
+            }
+
+            50% {
+                box-shadow: 0 0 35px rgba(255, 71, 87, 0.3);
+            }
+        }
+
+        /* ===================== RESPONSIVE ===================== */
+        @media (max-width: 960px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                padding: 0 16px;
+            }
+
+            .app-container {
+                padding: 16px;
+            }
+
+            .email-bar input {
+                width: 180px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .tabs-row {
+                width: 100%;
+            }
+
+            .tab {
+                flex: 1;
+                justify-content: center;
+                padding: 10px 12px;
+                font-size: 0.8rem;
+            }
+
+            .email-bar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ========== HEADER ========== -->
+    <header class="header">
+        <div class="brand">
+            <div class="brand-icon">
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M12 2C12 2 15 6 15 9.5C15 11.2 13.7 12.5 12 12.5C10.3 12.5 9 11.2 9 9.5C9 6 12 2 12 2ZM17.5 12.5C17.5 16.1 14.6 19 11 19C7.4 19 4.5 16.1 4.5 12.5C4.5 10.9 5.1 9.4 6 8.3C6 8.3 4 10.5 4 13C4 17.4 7.6 21 12 21C16.4 21 20 17.4 20 13C20 9 17.5 6 17.5 6C17.5 6 17.5 8.9 17.5 12.5Z" />
+                </svg>
+            </div>
+            <span class="brand-name">FireGuardian</span>
+            <span class="brand-tag">PRO</span>
+        </div>
+
+        <div class="email-bar" title="Nhập email để nhận cảnh báo tự động khi phát hiện cháy">
+            <svg viewBox="0 0 24 24">
+                <path
+                    d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 8L12 13L4 8V6L12 11L20 6V8Z" />
+            </svg>
+            <input type="email" id="email-input" placeholder="Email nhận cảnh báo (VD: you@gmail.com)"
+                autocomplete="off">
+        </div>
+    </header>
+
+    <!-- ========== MAIN APP ========== -->
+    <div class="app-container">
+
+        <!-- Tab Buttons -->
+        <div class="tabs-row" id="tabs-row">
+            <button class="tab active" data-mode="image">
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
+                </svg>
+                Phân tích Ảnh
+            </button>
+            <button class="tab" data-mode="video">
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" />
+                </svg>
+                Xử lý Video
+            </button>
+            <button class="tab" data-mode="webcam">
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+                </svg>
+                Trực tiếp Webcam
+            </button>
+        </div>
+
+        <!-- ===== IMAGE / VIDEO WORKSPACE ===== -->
+        <div class="workspace active" id="ws-file">
+            <!-- INPUT CARD -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="indicator"></span>
+                    Dữ liệu đầu vào
+                    <span class="label" id="mode-label">Chế độ ảnh</span>
+                </div>
+
+                <div class="viewport" id="drop-zone">
+                    <div class="viewport-empty" id="upload-empty">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z" />
+                        </svg>
+                        <span id="upload-hint">Kéo thả ảnh vào đây hoặc bấm chọn</span>
+                        <small>Hỗ trợ: JPG, PNG, WEBP, MP4</small>
+                    </div>
+                    <img id="preview-img" alt="Preview">
+                </div>
+
+                <input type="file" id="file-input" accept="image/*">
+
+                <div class="btn-row">
+                    <button class="btn btn-ghost" onclick="document.getElementById('file-input').click()">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z" />
+                        </svg>
+                        Chọn file
+                    </button>
+                    <button class="btn btn-fire" id="btn-analyze" disabled>
+                        <div class="spinner-sm" id="sp-analyze"></div>
+                        <span id="txt-analyze">Bắt đầu phân tích</span>
+                    </button>
+                </div>
+
+                <div class="status-row">
+                    <span class="meta" id="file-meta">Chưa có file nào</span>
+                </div>
+            </div>
+
+            <!-- RESULT CARD -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="indicator green"></span>
+                    Kết quả giám sát
+                </div>
+
+                <div class="viewport no-dashed" id="result-viewport">
+                    <div class="scan-line"></div>
+                    <div class="viewport-empty" id="result-empty">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                        </svg>
+                        <span>Kết quả sẽ hiển thị ở đây</span>
+                    </div>
+                    <img id="result-img" alt="AI Detection Result">
+                </div>
+
+                <div class="status-row">
+                    <span class="meta">Thời gian: <strong id="time-display">—</strong></span>
+                    <span class="badge badge-idle" id="result-badge">Đang chờ</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== WEBCAM WORKSPACE ===== -->
+        <div class="workspace" id="ws-webcam">
+            <!-- CAMERA SOURCE CARD -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="indicator green"></span>
+                    Camera trực tiếp
+                    <span class="label">RAW Feed</span>
+                </div>
+
+                <div class="viewport no-dashed">
+                    <div class="viewport-empty" id="cam-empty">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M18 10.48V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4.48l4 3.98v-11l-4 3.98zm-2-.79V18H4V6h12v3.69z" />
+                        </svg>
+                        <span>Camera chưa được bật</span>
+                        <small>Bấm nút bên dưới để cấp quyền</small>
+                    </div>
+                    <video id="cam-video" autoplay playsinline></video>
+                </div>
+                <canvas id="cam-canvas" style="display:none"></canvas>
+
+                <div class="btn-row">
+                    <button class="btn btn-ghost" id="btn-cam-toggle">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M18 10.48V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4.48l4 3.98v-11l-4 3.98z" />
+                        </svg>
+                        <span id="txt-cam-toggle">Mở Camera</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- WEBCAM AI RESULT CARD -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="indicator"></span>
+                    Kết quả AI (Realtime)
+                    <span class="fps-tag" id="fps-tag" style="margin-left:auto">— FPS</span>
+                </div>
+
+                <div class="viewport no-dashed" id="cam-result-vp">
+                    <div class="scan-line"></div>
+                    <div class="viewport-empty" id="cam-result-empty">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                        </svg>
+                        <span>Bật giám sát AI để xem kết quả</span>
+                    </div>
+                    <img id="cam-result-img" alt="Webcam AI Result">
+                </div>
+
+                <div class="cam-controls">
+                    <button class="btn btn-cam" id="btn-ai-toggle" disabled>
+                        <div class="spinner-sm" id="sp-cam"></div>
+                        <span id="txt-ai-toggle">Bật giám sát AI</span>
+                    </button>
+                </div>
+                <div class="status-row" style="margin-top:10px">
+                    <span class="meta" id="cam-meta">&nbsp;</span>
+                    <span class="badge badge-idle" id="cam-badge">Hệ thống nghỉ</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== JAVASCRIPT ========== -->
+    <script>
+        (() => {
+            'use strict';
+
+            const API = 'http://127.0.0.1:8000';
+
+            // === DOM Refs ===
+            const $ = id => document.getElementById(id);
+            const emailInput = $('email-input');
+
+            // File mode
+            const dropZone = $('drop-zone');
+            const fileInput = $('file-input');
+            const uploadEmpty = $('upload-empty');
+            const uploadHint = $('upload-hint');
+            const previewImg = $('preview-img');
+            const btnAnalyze = $('btn-analyze');
+            const spAnalyze = $('sp-analyze');
+            const txtAnalyze = $('txt-analyze');
+            const fileMeta = $('file-meta');
+            const modeLabel = $('mode-label');
+            const resultViewport = $('result-viewport');
+            const resultEmpty = $('result-empty');
+            const resultImg = $('result-img');
+            const timeDisplay = $('time-display');
+            const resultBadge = $('result-badge');
+
+            // Webcam mode
+            const camVideo = $('cam-video');
+            const camCanvas = $('cam-canvas');
+            const camCtx = camCanvas.getContext('2d');
+            const camEmpty = $('cam-empty');
+            const btnCamToggle = $('btn-cam-toggle');
+            const txtCamToggle = $('txt-cam-toggle');
+            const btnAiToggle = $('btn-ai-toggle');
+            const spCam = $('sp-cam');
+            const txtAiToggle = $('txt-ai-toggle');
+            const camResultVp = $('cam-result-vp');
+            const camResultEmpty = $('cam-result-empty');
+            const camResultImg = $('cam-result-img');
+            const fpsTag = $('fps-tag');
+            const camBadge = $('cam-badge');
+
+            let currentMode = 'image';
+            let selectedFile = null;
+            let camStream = null;
+            let isCamOn = false;
+            let isAiOn = false;
+            let aiLoop = null;
+            let fpsCount = 0;
+            let fpsTimer = null;
+
+            // === Tab Switching ===
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const mode = tab.dataset.mode;
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    currentMode = mode;
+
+                    if (mode === 'webcam') {
+                        $('ws-file').classList.remove('active');
+                        $('ws-webcam').classList.add('active');
+                    } else {
+                        $('ws-webcam').classList.remove('active');
+                        $('ws-file').classList.add('active');
+                        fileInput.accept = mode === 'video' ? 'video/mp4,video/avi' : 'image/*';
+                        modeLabel.textContent = mode === 'video' ? 'Chế độ Video' : 'Chế độ Ảnh';
+                        uploadHint.textContent = mode === 'video' ? 'Kéo thả video MP4 vào đây' : 'Kéo thả ảnh vào đây hoặc bấm chọn';
+                        resetFileState();
+                    }
+                });
+            });
+
+            function resetFileState() {
+                selectedFile = null;
+                previewImg.style.display = 'none';
+                uploadEmpty.style.display = 'flex';
+                btnAnalyze.disabled = true;
+                fileMeta.textContent = 'Chưa có file nào';
+                resultImg.style.display = 'none';
+                resultEmpty.style.display = 'flex';
+                resultViewport.classList.remove('scanning');
+                timeDisplay.textContent = '—';
+                resultBadge.className = 'badge badge-idle';
+                resultBadge.textContent = 'Đang chờ';
+                if (resultImg.src.startsWith('blob:')) URL.revokeObjectURL(resultImg.src);
+            }
+
+            // === Drag & Drop ===
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev =>
+                dropZone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); }, false));
+            ['dragenter', 'dragover'].forEach(ev =>
+                dropZone.addEventListener(ev, () => dropZone.classList.add('drag-hover'), false));
+            ['dragleave', 'drop'].forEach(ev =>
+                dropZone.addEventListener(ev, () => dropZone.classList.remove('drag-hover'), false));
+            dropZone.addEventListener('drop', e => pickFile(e.dataTransfer.files));
+            dropZone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', function () { pickFile(this.files); });
+
+            function pickFile(files) {
+                if (!files.length) return;
+                selectedFile = files[0];
+                const sizeMB = (selectedFile.size / 1048576).toFixed(2);
+                fileMeta.innerHTML = `<strong style="color:var(--accent-green)">${selectedFile.name}</strong> — ${sizeMB} MB`;
+                btnAnalyze.disabled = false;
+
+                if (selectedFile.type.startsWith('image/')) {
+                    // Auto-detect mode
+                    if (currentMode === 'video') { document.querySelector('[data-mode="image"]').click(); }
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        previewImg.src = e.target.result;
+                        previewImg.style.display = 'block';
+                        previewImg.style.opacity = '0.5';
+                        uploadEmpty.style.display = 'none';
+                    };
+                    reader.readAsDataURL(selectedFile);
+                } else if (selectedFile.type.startsWith('video/')) {
+                    if (currentMode === 'image') { document.querySelector('[data-mode="video"]').click(); }
+                    uploadEmpty.querySelector('span').textContent = '🎬 Video sẵn sàng xử lý';
+                    uploadEmpty.querySelector('small').textContent = selectedFile.name;
+                    previewImg.style.display = 'none';
+                }
+            }
+
+            // === Analyze Click ===
+            btnAnalyze.addEventListener('click', async () => {
+                if (!selectedFile) return;
+                setLoading(true);
+
+                try {
+                    const formData = new FormData();
+                    formData.append('file', selectedFile);
+                    const email = emailInput.value.trim();
+                    if (email) formData.append('email', email);
+
+                    if (currentMode === 'image') {
+                        const res = await fetch(`${API}/api/detect/image`, { method: 'POST', body: formData });
+                        if (!res.ok) throw new Error(await res.text());
+
+                        const blob = await res.blob();
+                        if (resultImg.src.startsWith('blob:')) URL.revokeObjectURL(resultImg.src);
+                        resultImg.src = URL.createObjectURL(blob);
+                        resultImg.style.display = 'block';
+                        resultEmpty.style.display = 'none';
+                        previewImg.style.opacity = '1';
+
+                        const fire = res.headers.get('X-Fire-Detected') === 'true';
+                        const conf = res.headers.get('X-Highest-Confidence');
+                        const ms = res.headers.get('X-Inference-Time-Ms') || '—';
+                        timeDisplay.textContent = ms + ' ms';
+
+                        if (fire) {
+                            resultBadge.className = 'badge badge-danger';
+                            resultBadge.textContent = `🔥 CHÁY — ${conf}%`;
+                        } else {
+                            resultBadge.className = 'badge badge-safe';
+                            resultBadge.textContent = '✔ An toàn';
+                        }
+                    } else {
+                        // VIDEO
+                        const res = await fetch(`${API}/api/detect/video/upload`, { method: 'POST', body: formData });
+                        if (!res.ok) throw new Error(await res.text());
+                        const data = await res.json();
+
+                        resultImg.src = `${API}/api/detect/video/stream/${data.video_id}`;
+                        resultImg.style.display = 'block';
+                        resultEmpty.style.display = 'none';
+                        resultBadge.className = 'badge badge-safe';
+                        resultBadge.textContent = '▶ Đang chiếu stream AI';
+                        timeDisplay.textContent = 'Realtime';
+                    }
+                } catch (err) {
+                    resultBadge.className = 'badge badge-idle';
+                    resultBadge.textContent = '❌ ' + err.message;
+                } finally {
+                    setLoading(false);
+                }
+            });
+
+            function setLoading(on) {
+                btnAnalyze.disabled = on;
+                spAnalyze.style.display = on ? 'block' : 'none';
+                txtAnalyze.textContent = on ? 'Đang xử lý…' : 'Bắt đầu phân tích';
+                if (on) {
+                    resultViewport.classList.add('scanning');
+                    resultEmpty.style.display = 'none';
+                } else {
+                    resultViewport.classList.remove('scanning');
+                }
+            }
+
+            // === Webcam ===
+            btnCamToggle.addEventListener('click', async () => {
+                if (!isCamOn) {
+                    try {
+                        camStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+                        camVideo.srcObject = camStream;
+                        camVideo.style.display = 'block';
+                        camEmpty.style.display = 'none';
+                        isCamOn = true;
+                        txtCamToggle.textContent = 'Tắt Camera';
+                        btnCamToggle.classList.add('btn-stop');
+                        btnCamToggle.classList.remove('btn-ghost');
+                        btnAiToggle.disabled = false;
+                    } catch (e) {
+                        alert('Không thể mở Camera: ' + e.message);
+                    }
+                } else {
+                    if (isAiOn) toggleAI();
+                    camStream.getTracks().forEach(t => t.stop());
+                    camVideo.srcObject = null;
+                    camVideo.style.display = 'none';
+                    camEmpty.style.display = 'flex';
+                    isCamOn = false;
+                    txtCamToggle.textContent = 'Mở Camera';
+                    btnCamToggle.classList.remove('btn-stop');
+                    btnCamToggle.classList.add('btn-ghost');
+                    btnAiToggle.disabled = true;
+                }
+            });
+
+            btnAiToggle.addEventListener('click', toggleAI);
+
+            function toggleAI() {
+                isAiOn = !isAiOn;
+                if (isAiOn) {
+                    txtAiToggle.textContent = 'Dừng giám sát';
+                    spCam.style.display = 'block';
+                    btnAiToggle.classList.add('btn-stop');
+                    btnAiToggle.classList.remove('btn-cam');
+                    camResultEmpty.style.display = 'none';
+                    camResultImg.style.display = 'block';
+                    camResultVp.classList.add('scanning');
+                    camCanvas.width = camVideo.videoWidth || 640;
+                    camCanvas.height = camVideo.videoHeight || 480;
+                    fpsCount = 0;
+                    fpsTimer = setInterval(() => {
+                        fpsTag.textContent = fpsCount + ' FPS';
+                        fpsCount = 0;
+                    }, 1000);
+                    grabFrame();
+                } else {
+                    txtAiToggle.textContent = 'Bật giám sát AI';
+                    spCam.style.display = 'none';
+                    btnAiToggle.classList.remove('btn-stop');
+                    btnAiToggle.classList.add('btn-cam');
+                    camResultVp.classList.remove('scanning');
+                    clearTimeout(aiLoop);
+                    clearInterval(fpsTimer);
+                    fpsTag.textContent = '— FPS';
+                    camBadge.className = 'badge badge-idle';
+                    camBadge.textContent = 'Hệ thống nghỉ';
+                }
+            }
+
+            function grabFrame() {
+                if (!isAiOn) return;
+                camCtx.drawImage(camVideo, 0, 0, camCanvas.width, camCanvas.height);
+                camCanvas.toBlob(async blob => {
+                    if (!blob) { aiLoop = setTimeout(grabFrame, 200); return; }
+                    const fd = new FormData();
+                    fd.append('file', blob, 'frame.jpg');
+                    const email = emailInput.value.trim();
+                    if (email) fd.append('email', email);
+                    try {
+                        const res = await fetch(`${API}/api/detect/image`, { method: 'POST', body: fd });
+                        if (res.ok) {
+                            const b = await res.blob();
+                            if (camResultImg.src.startsWith('blob:')) URL.revokeObjectURL(camResultImg.src);
+                            camResultImg.src = URL.createObjectURL(b);
+                            fpsCount++;
+
+                            const fire = res.headers.get('X-Fire-Detected') === 'true';
+                            const conf = res.headers.get('X-Highest-Confidence');
+                            if (fire) {
+                                camBadge.className = 'badge badge-danger';
+                                camBadge.textContent = `🔥 CHÁY — ${conf}%`;
+                            } else {
+                                camBadge.className = 'badge badge-safe';
+                                camBadge.textContent = '✔ An toàn';
+                            }
+                        }
+                    } catch (e) { /* skip frame on error */ }
+                    aiLoop = setTimeout(grabFrame, 100);
+                }, 'image/jpeg', 0.75);
+            }
+        })();
+    </script>
+</body>
+
+</html>

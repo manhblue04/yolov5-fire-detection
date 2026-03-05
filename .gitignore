@@ -1,0 +1,56 @@
+# ==========================================
+# .gitignore — FireGuardian PRO
+# ==========================================
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+
+# === Virtual Environment ===
+venv/
+.venv/
+env/
+
+# === IDE & Editor ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+
+# === OS ===
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.lnk
+
+# === Model Weights (quá nặng cho GitHub, dùng Git LFS hoặc tải riêng) ===
+model/*.pt
+
+# === Dataset (quá nặng, nên host riêng) ===
+datasets/
+
+# === YOLOv5 Training Runs (Kết quả huấn luyện cũ) ===
+yolov5/runs/
+
+# === Kết quả inference cũ ===
+results/
+
+# === Jupyter Notebook Checkpoints ===
+.ipynb_checkpoints/
+
+# === File tạm ===
+*.tmp
+*.bak
+*.log
+*.mp4
+*.avi
